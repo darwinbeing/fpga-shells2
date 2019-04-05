@@ -1,6 +1,5 @@
 
 set top tb_E300HBirdKitFPGAChip
-set tbdir [file join [pwd] testbench]
 
 # set number of threads to 8 (maximum, unfortunately)
 set_param general.maxThreads 8
@@ -18,6 +17,6 @@ launch_simulation
 
 start_gui
 
-# open_wave_config ${tbdir}/fpga_tb_top_behav.wcfg
+open_wave_config ${wrkdir}/../../../testbench/tb_E300HBirdKitFPGAChip_behav.wcfg
 
-run 10ms
+run 1ms
