@@ -75,28 +75,28 @@ set_property -dict { PACKAGE_PIN Y11   IOSTANDARD LVCMOS33 } [get_ports { jd_6 }
 
 ##USB-UART Interface (FTDI FT2232H)
 
-set_property -dict { PACKAGE_PIN P16   IOSTANDARD LVCMOS33  } [get_ports { uart_rxd_out }]; #IO_L19N_T3_VREF_16 Sch=uart_rxd_out
-set_property -dict { PACKAGE_PIN R17   IOSTANDARD LVCMOS33  } [get_ports { uart_txd_in }]; #IO_L14N_T2_SRCC_16 Sch=uart_txd_in
+set_property -dict { PACKAGE_PIN R17  IOSTANDARD LVCMOS33  } [get_ports { uart_rxd_out }]; #IO_L19N_T3_VREF_16 Sch=uart_rxd_out
+set_property -dict { PACKAGE_PIN P16  IOSTANDARD LVCMOS33  } [get_ports { uart_txd_in }]; #IO_L14N_T2_SRCC_16 Sch=uart_txd_in
 
 ##MCU QSPI Flash(W25Q32FVSSIG)
 
-#set_property -dict { PACKAGE_PIN W15   IOSTANDARD LVCMOS33  IOB TRUE } [get_ports { qspi_sck }]; #IO_L16P_T2_13 Sch=qspi_sck
+set_property -dict { PACKAGE_PIN W15   IOSTANDARD LVCMOS33  IOB TRUE } [get_ports { qspi_sck }]; #IO_L16P_T2_13 Sch=qspi_sck
 # create_clock -add -name qspi_sck_pin -period 20.00 -waveform {0 10}    [get_ports { qspi_sck }];
-#set_property -dict { PACKAGE_PIN W16   IOSTANDARD LVCMOS33  IOB TRUE } [get_ports { qspi_cs }]; #IO_L16N_T2_13 Sch=qspi_cs
-#set_property -dict { PACKAGE_PIN T15   IOSTANDARD LVCMOS33  IOB TRUE  PULLUP TRUE } [get_ports { qspi_dq_0 }]; #IO_L15N_T2_DQS_13 Sch=qspi_dq[0]
-#set_property -dict { PACKAGE_PIN T14   IOSTANDARD LVCMOS33  IOB TRUE  PULLUP TRUE } [get_ports { qspi_dq_1 }]; #IO_L15P_T2_DQS_13 Sch=qspi_dq[1]
-#set_property -dict { PACKAGE_PIN T16   IOSTANDARD LVCMOS33  IOB TRUE  PULLUP TRUE } [get_ports { qspi_dq_2 }]; #IO_L17P_T2_13 Sch=qspi_dq[2]
-#set_property -dict { PACKAGE_PIN U16   IOSTANDARD LVCMOS33  IOB TRUE  PULLUP TRUE } [get_ports { qspi_dq_3 }]; #IO_L17N_T2_13 Sch=qspi_dq[3]
+set_property -dict { PACKAGE_PIN W16   IOSTANDARD LVCMOS33  IOB TRUE } [get_ports { qspi_cs }]; #IO_L16N_T2_13 Sch=qspi_cs
+set_property -dict { PACKAGE_PIN T15   IOSTANDARD LVCMOS33  IOB TRUE  PULLUP TRUE } [get_ports { qspi_dq_0 }]; #IO_L15N_T2_DQS_13 Sch=qspi_dq[0]
+set_property -dict { PACKAGE_PIN T14   IOSTANDARD LVCMOS33  IOB TRUE  PULLUP TRUE } [get_ports { qspi_dq_1 }]; #IO_L15P_T2_DQS_13 Sch=qspi_dq[1]
+set_property -dict { PACKAGE_PIN T16   IOSTANDARD LVCMOS33  IOB TRUE  PULLUP TRUE } [get_ports { qspi_dq_2 }]; #IO_L17P_T2_13 Sch=qspi_dq[2]
+set_property -dict { PACKAGE_PIN U16   IOSTANDARD LVCMOS33  IOB TRUE  PULLUP TRUE } [get_ports { qspi_dq_3 }]; #IO_L17N_T2_13 Sch=qspi_dq[3]
 
 ##FPGA QSPI Flash(N25Q128A13ESF40G)
 
-set_property -dict { PACKAGE_PIN L12   IOSTANDARD LVCMOS33  IOB TRUE } [get_ports { qspi_sck }]; #CCLK_0 Sch=qspi_sck
-create_clock -add -name qspi_sck_pin -period 20.00 -waveform {0 10}    [get_ports { qspi_sck }];
-set_property -dict { PACKAGE_PIN T19   IOSTANDARD LVCMOS33  IOB TRUE } [get_ports { qspi_cs }]; #IO_L6P_T0_FCS_B_14 Sch=qspi_cs
-set_property -dict { PACKAGE_PIN P22   IOSTANDARD LVCMOS33  IOB TRUE  PULLUP TRUE } [get_ports { qspi_dq_0 }]; #IO_L1P_T0_D00_MOSI_14 Sch=qspi_dq_0
-set_property -dict { PACKAGE_PIN R22   IOSTANDARD LVCMOS33  IOB TRUE  PULLUP TRUE } [get_ports { qspi_dq_1 }]; #IO_L1N_T0_D01_DIN_14 Sch=qspi_dq_1
-set_property -dict { PACKAGE_PIN P21   IOSTANDARD LVCMOS33  IOB TRUE  PULLUP TRUE } [get_ports { qspi_dq_2 }]; #IO_L2P_T0_D02_14 Sch=qspi_dq_2
-set_property -dict { PACKAGE_PIN R21   IOSTANDARD LVCMOS33  IOB TRUE  PULLUP TRUE } [get_ports { qspi_dq_3 }]; #IO_L2N_T0_D03_14 Sch=qspi_dq_3
+# set_property -dict { PACKAGE_PIN L12   IOSTANDARD LVCMOS33  IOB TRUE } [get_ports { qspi_sck }]; #CCLK_0 Sch=qspi_sck
+# create_clock -add -name qspi_sck_pin -period 20.00 -waveform {0 10}    [get_ports { qspi_sck }];
+# set_property -dict { PACKAGE_PIN T19   IOSTANDARD LVCMOS33  IOB TRUE } [get_ports { qspi_cs }]; #IO_L6P_T0_FCS_B_14 Sch=qspi_cs
+# set_property -dict { PACKAGE_PIN P22   IOSTANDARD LVCMOS33  IOB TRUE  PULLUP TRUE } [get_ports { qspi_dq_0 }]; #IO_L1P_T0_D00_MOSI_14 Sch=qspi_dq_0
+# set_property -dict { PACKAGE_PIN R22   IOSTANDARD LVCMOS33  IOB TRUE  PULLUP TRUE } [get_ports { qspi_dq_1 }]; #IO_L1N_T0_D01_DIN_14 Sch=qspi_dq_1
+# set_property -dict { PACKAGE_PIN P21   IOSTANDARD LVCMOS33  IOB TRUE  PULLUP TRUE } [get_ports { qspi_dq_2 }]; #IO_L2P_T0_D02_14 Sch=qspi_dq_2
+# set_property -dict { PACKAGE_PIN R21   IOSTANDARD LVCMOS33  IOB TRUE  PULLUP TRUE } [get_ports { qspi_dq_3 }]; #IO_L2N_T0_D03_14 Sch=qspi_dq_3
 
 ##Power Measurements
 
