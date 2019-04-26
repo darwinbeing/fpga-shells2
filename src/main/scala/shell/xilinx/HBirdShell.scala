@@ -7,18 +7,41 @@ import chisel3.experimental.{RawModule, Analog, withClockAndReset}
 
 import freechips.rocketchip.config._
 import freechips.rocketchip.devices.debug._
+import freechips.rocketchip.util.{SyncResetSynchronizerShiftReg, ElaborationArtefacts, HeterogeneousBag}
 
 import sifive.blocks.devices.gpio._
 import sifive.blocks.devices.pwm._
 import sifive.blocks.devices.spi._
 import sifive.blocks.devices.uart._
 import sifive.blocks.devices.pinctrl.{BasePin}
+import sifive.blocks.devices.chiplink._
 
-import sifive.fpgashells.ip.xilinx.{IBUFG, IOBUF, PULLUP, mmcm, reset_sys, PowerOnResetFPGAOnly}
+import sifive.fpgashells.devices.xilinx.xilinxhbirdmig._
+// import sifive.fpgashells.ip.xilinx.{IBUFG, IOBUF, PULLUP, mmcm, reset_sys, PowerOnResetFPGAOnly}
+import sifive.fpgashells.ip.xilinx.{IBUFG, IOBUF, PULLUP, PowerOnResetFPGAOnly, Series7MMCM, hbird_reset}
 
+import sifive.fpgashells.clocks._
 //-------------------------------------------------------------------------
 // HBirdShell
 //-------------------------------------------------------------------------
+
+trait HasDDR3 { this: HBirdShell =>
+
+  require(!p.lift(MemoryXilinxDDRKey).isEmpty)
+  val ddr = IO(new XilinxHBirdMIGPads(p(MemoryXilinxDDRKey)))
+
+  def connectMIG(dut: HasMemoryXilinxHBirdMIGModuleImp): Unit = {
+    // Clock & Reset
+    dut.xilinxhbirdmig.sys_clk_i := clk200.asUInt
+    mig_clock                    := dut.xilinxhbirdmig.ui_clk
+    mig_sys_reset                := dut.xilinxhbirdmig.ui_clk_sync_rst
+    mig_mmcm_locked              := dut.xilinxhbirdmig.mmcm_locked
+    dut.xilinxhbirdmig.aresetn   := mig_resetn
+    dut.xilinxhbirdmig.sys_rst   := sys_reset
+
+    ddr <> dut.xilinxhbirdmig
+  }
+}
 
 abstract class HBirdShell(implicit val p: Parameters) extends RawModule {
 
@@ -65,11 +88,6 @@ abstract class HBirdShell(implicit val p: Parameters) extends RawModule {
   // Wire declrations
   //-----------------------------------------------------------------------
 
-  // Note: these frequencies are approximate.
-  val clock_8MHz     = Wire(Clock())
-  val clock_32MHz    = Wire(Clock())
-  val clock_65MHz    = Wire(Clock())
-
   val mmcm_locked    = Wire(Bool())
 
   val reset_core     = Wire(Bool())
@@ -88,40 +106,96 @@ abstract class HBirdShell(implicit val p: Parameters) extends RawModule {
   val dut_ndreset    = Wire(Bool())
 
   val ck_rst         = Wire(Bool())
+  val reset          = Wire(Bool())
+
+  val sys_clock       = Wire(Clock())
+  val sys_reset       = Wire(Bool())
+
+  val dut_clock       = Wire(Clock())
+  val dut_reset       = Wire(Bool())
+  val dut_resetn      = Wire(Bool())
+
+  val do_reset        = Wire(Bool())
+
+  val mig_mmcm_locked = Wire(Bool())
+  val mig_sys_reset   = Wire(Bool())
+
+  val mig_clock       = Wire(Clock())
+  val mig_reset       = Wire(Bool())
+  val mig_resetn      = Wire(Bool())
+
+  //-----------------------------------------------------------------------
+  // System clock and reset
+  //-----------------------------------------------------------------------
+
+  // Clock that drives the clock generator and the MIG
+  sys_clock := CLK100MHZ
+
+  // Allow the debug module to reset everything. Resets the MIG
+  ck_rst    := fpga_rst & mcu_rst
+  reset     := !ck_rst
+  sys_reset := reset | dut_ndreset
 
   //-----------------------------------------------------------------------
   // Clock Generator
   //-----------------------------------------------------------------------
-  // Mixed-mode clock generator
 
-  val ip_mmcm = Module(new mmcm())
+  //25MHz and multiples
+  val hbird_sys_clock_mmcm0 = Module(new Series7MMCM(PLLParameters(
+    "hbird_sys_clock_mmcm2",
+    PLLInClockParameters(100, 50),
+    Seq(
+      PLLOutClockParameters(12.5),
+      PLLOutClockParameters(25),
+      PLLOutClockParameters(37.5),
+      PLLOutClockParameters(50),
+      PLLOutClockParameters(200),
+      PLLOutClockParameters(150.00),
+      PLLOutClockParameters(100, 180)))))
 
-  ip_mmcm.io.clk_in1 := CLK100MHZ
-  clock_8MHz         := ip_mmcm.io.clk_out1  // 8.388 MHz = 32.768 kHz * 256
-  clock_65MHz        := ip_mmcm.io.clk_out2  // 65 Mhz
-  clock_32MHz        := ip_mmcm.io.clk_out3  // 65/2 Mhz
-  ip_mmcm.io.resetn  := ck_rst
-  mmcm_locked        := ip_mmcm.io.locked
+  hbird_sys_clock_mmcm0.io.clk_in1 := sys_clock
+  hbird_sys_clock_mmcm0.io.reset   := reset
+  val hbird_sys_clock_mmcm0_locked = hbird_sys_clock_mmcm0.io.locked
+  val Seq(clk12_5, clk25, clk37_5, clk50, clk200, clk150, clk100_180) = hbird_sys_clock_mmcm0.getClocks
+
+  //65MHz and multiples
+  val hbird_sys_clock_mmcm1 = Module(new Series7MMCM(PLLParameters(
+    "hbird_sys_clock_mmcm1",
+    PLLInClockParameters(100, 50),
+    Seq(
+      PLLOutClockParameters(32.5),
+      PLLOutClockParameters(65, 180)))))
+
+  hbird_sys_clock_mmcm1.io.clk_in1 := sys_clock
+  hbird_sys_clock_mmcm1.io.reset   := reset
+  val clk32_5              = hbird_sys_clock_mmcm1.io.clk_out1
+  val clk65                = hbird_sys_clock_mmcm1.io.clk_out2
+  val hbird_sys_clock_mmcm1_locked = hbird_sys_clock_mmcm1.io.locked
+
+  // DUT clock
+  dut_clock := clk37_5
 
   //-----------------------------------------------------------------------
-  // System Reset
+  // System reset
   //-----------------------------------------------------------------------
-  // processor system reset module
 
-  val ip_reset_sys = Module(new reset_sys())
+  do_reset             := !mig_mmcm_locked || mig_sys_reset || !hbird_sys_clock_mmcm0_locked ||
+                          !hbird_sys_clock_mmcm1_locked
+  mig_resetn           := !mig_reset
+  dut_resetn           := !dut_reset
 
-  ck_rst                           := fpga_rst & mcu_rst
-  ip_reset_sys.io.slowest_sync_clk := clock_8MHz
-  ip_reset_sys.io.ext_reset_in     := ck_rst
-  ip_reset_sys.io.aux_reset_in     := true.B
-  ip_reset_sys.io.mb_debug_sys_rst := dut_ndreset
-  ip_reset_sys.io.dcm_locked       := mmcm_locked
+  val safe_reset = Module(new hbird_reset)
 
-  reset_core                       := ip_reset_sys.io.mb_reset
-  reset_bus                        := ip_reset_sys.io.bus_struct_reset
-  reset_periph                     := ip_reset_sys.io.peripheral_reset
-  reset_intcon_n                   := ip_reset_sys.io.interconnect_aresetn
-  reset_periph_n                   := ip_reset_sys.io.peripheral_aresetn
+  safe_reset.io.areset := do_reset
+  safe_reset.io.clock1 := mig_clock
+  mig_reset            := safe_reset.io.reset1
+  safe_reset.io.clock2 := dut_clock
+  dut_reset            := safe_reset.io.reset2
+
+  //overrided in connectMIG
+  //provide defaults to allow above reset sequencing logic to work without both
+  mig_clock            := dut_clock
+  mig_mmcm_locked      := UInt("b1")
 
   //-----------------------------------------------------------------------
   // SPI Flash
@@ -135,8 +209,8 @@ abstract class HBirdShell(implicit val p: Parameters) extends RawModule {
 
       SPIPinsFromPort(qspi_pins,
         dut.qspi(0),
-        dut.clock,
-        dut.reset,
+        dut_clock,
+        dut_reset,
         syncStages = qspi_params.defaultSampleDel
       )
 
@@ -159,7 +233,7 @@ abstract class HBirdShell(implicit val p: Parameters) extends RawModule {
     // JTAG Reset
     //-------------------------------------------------------------------
 
-    val jtag_power_on_reset = PowerOnResetFPGAOnly(clock_32MHz)
+    val jtag_power_on_reset = PowerOnResetFPGAOnly(dut_clock)
 
     dut_jtag_reset := jtag_power_on_reset
 
