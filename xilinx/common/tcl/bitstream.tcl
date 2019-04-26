@@ -1,5 +1,10 @@
 # See LICENSE for license details.
 
+
+# Reduce these failures down to warnings to allow bit file to be generated without LOC constaints being applied to pins
+set_property SEVERITY {Warning} [get_drc_checks NSTD-1]
+set_property SEVERITY {Warning} [get_drc_checks UCIO-1]
+
 # Write a bitstream for the current design
 write_bitstream -force [file join $wrkdir "${top}.bit"]
 
