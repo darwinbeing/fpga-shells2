@@ -10,12 +10,12 @@ module SimTestHarness( );
         reset = 1;
         clk = 1;
         uart_rx = 1;
-        #20;
+        #200;
         reset = 0;
     end
     always #5 clk = ~clk;
 
-    StarshipTop dut (
+    StarshipFPGATop dut (
         .clock(clk),
         .reset(reset),
         .uart_0_rxd(uart_rx)
