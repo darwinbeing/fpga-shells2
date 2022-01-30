@@ -16,7 +16,7 @@ import sifive.blocks.devices.chiplink._
 
 import sifive.fpgashells.devices.xilinx.xilinxvc707mig._
 import sifive.fpgashells.devices.xilinx.xilinxvc707pciex1._
-import sifive.fpgashells.ip.xilinx.{IBUFDS, PowerOnResetFPGAOnly, sdio_spi_bridge, Series7MMCM, vc707reset}
+import sifive.fpgashells.ip.xilinx._
 
 //vc707_sys_clock_mmcm0, vc707_sys_clock_, vc707_sys_clock_mmcm2 , vc707reset}
 import sifive.fpgashells.clocks._
@@ -477,8 +477,10 @@ abstract class VC707Shell(implicit val p: Parameters) extends RawModule {
   // Clock that drives the clock generator and the MIG
   sys_clock := sys_clk_ibufds.io.O
 
+  val reset_ibuf = Module(new IBUF)
+  reset_ibuf.io.I := reset
   // Allow the debug module to reset everything. Resets the MIG
-  sys_reset := reset | dut_ndreset
+  sys_reset := reset_ibuf.io.O | dut_ndreset
 
   //-----------------------------------------------------------------------
   // Clock Generator
@@ -498,7 +500,7 @@ abstract class VC707Shell(implicit val p: Parameters) extends RawModule {
       PLLOutClockParameters(100, 180)))))
   
   vc707_sys_clock_mmcm0.io.clk_in1 := sys_clock
-  vc707_sys_clock_mmcm0.io.reset   := reset
+  vc707_sys_clock_mmcm0.io.reset   := sys_reset
   val vc707_sys_clock_mmcm0_locked = vc707_sys_clock_mmcm0.io.locked
   val Seq(clk12_5, clk25, clk37_5, clk50, clk100, clk150, clk100_180) = vc707_sys_clock_mmcm0.getClocks
 
@@ -512,7 +514,7 @@ abstract class VC707Shell(implicit val p: Parameters) extends RawModule {
       PLLOutClockParameters(65, 180)))))
   
   vc707_sys_clock_mmcm1.io.clk_in1 := sys_clock
-  vc707_sys_clock_mmcm1.io.reset   := reset
+  vc707_sys_clock_mmcm1.io.reset   := sys_reset
   val clk32_5              = vc707_sys_clock_mmcm1.io.clk_out1
   val clk65                = vc707_sys_clock_mmcm1.io.clk_out2
   val vc707_sys_clock_mmcm1_locked = vc707_sys_clock_mmcm1.io.locked
