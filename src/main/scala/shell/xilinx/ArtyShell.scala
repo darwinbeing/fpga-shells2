@@ -2,8 +2,8 @@
 package sifive.fpgashells.shell.xilinx.artyshell
 
 import Chisel._
-import chisel3.core.{Input, Output, attach}
-import chisel3.experimental.{RawModule, Analog, withClockAndReset}
+import chisel3.{Input, Output, RawModule, withClockAndReset}
+import chisel3.experimental.{attach, Analog}
 
 import freechips.rocketchip.config._
 import freechips.rocketchip.devices.debug._
@@ -79,6 +79,9 @@ abstract class ArtyShell(implicit val p: Parameters) extends RawModule {
   val ja_5         = IO(Analog(1.W))
   val ja_6         = IO(Analog(1.W))
   val ja_7         = IO(Analog(1.W))
+
+  // JC (used for additional debug/trace connection)
+  val jc           = IO(Vec(8, Analog(1.W)))
 
   // JD (used for JTAG connection)
   val jd_0         = IO(Analog(1.W))  // TDO
@@ -181,6 +184,7 @@ abstract class ArtyShell(implicit val p: Parameters) extends RawModule {
 
   def connectDebugJTAG(dut: HasPeripheryDebugModuleImp): SystemJTAGIO = {
 
+    require(dut.debug.isDefined, "Connecting JTAG requires that debug module exists")
     //-------------------------------------------------------------------
     // JTAG Reset
     //-------------------------------------------------------------------
@@ -210,7 +214,7 @@ abstract class ArtyShell(implicit val p: Parameters) extends RawModule {
     // JTAG PINS
     //-------------------------------------------------------------------
 
-    val djtag     = dut.debug.systemjtag.get
+    val djtag     = dut.debug.get.systemjtag.get
 
     djtag.jtag.TCK := dut_jtag_TCK
     djtag.jtag.TMS := dut_jtag_TMS
@@ -218,9 +222,11 @@ abstract class ArtyShell(implicit val p: Parameters) extends RawModule {
     dut_jtag_TDO   := djtag.jtag.TDO.data
 
     djtag.mfr_id   := p(JtagDTMKey).idcodeManufId.U(11.W)
+    djtag.part_number := p(JtagDTMKey).idcodePartNum.U(16.W)
+    djtag.version  := p(JtagDTMKey).idcodeVersion.U(4.W)
 
     djtag.reset    := dut_jtag_reset
-    dut_ndreset    := dut.debug.ndreset
+    dut_ndreset    := dut.debug.get.ndreset
 
     djtag
   }

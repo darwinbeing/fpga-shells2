@@ -15,8 +15,8 @@ import sifive.fpgashells.ip.microsemi.polarfirepcierootport._
 
 trait PolarFireEvalKitPCIeRefClk extends Bundle{
 //TODO: bring reference clock connection in here
-//  val REFCLK_rxp = Bool(INPUT)
-//  val REFCLK_rxn = Bool(INPUT)
+  val REFCLK_rxp = Bool(INPUT)
+  val REFCLK_rxn = Bool(INPUT)
 }
 
 class PolarFireEvalKitPCIeX4Pads extends Bundle 
@@ -59,7 +59,7 @@ class PolarFireEvalKitPCIeX4(implicit p: Parameters) extends LazyModule with Has
       := axi_to_pcie.master)
 
   val TLScope = LazyModule(new SimpleLazyModule with LazyScope)
-  val intnode: IntOutwardNode = IntSyncCrossingSink() := TLScope {
+  val intnode: IntOutwardNode = IntSyncAsyncCrossingSink() := TLScope {
     IntSyncCrossingSource(alreadyRegistered = true) := axi_to_pcie.intnode
   }
 

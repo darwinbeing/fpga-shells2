@@ -3,7 +3,6 @@ package sifive.fpgashells.devices.xilinx.ethernet
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.withClockAndReset
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.tilelink._
@@ -42,10 +41,10 @@ abstract class EthernetMAC(busWidthBytes: Int, base: BigInt)(implicit p: Paramet
     mac.io.tx_clk0 := port.pcs.tx_clock
     mac.io.rx_clk0 := port.pcs.rx_clock
     mac.io.reset := reset // combined with locked to reset MAC RX/TX FSMs
-    mac.io.tx_dcm_locked := !port.pcs.tx_reset
-    mac.io.rx_dcm_locked := !port.pcs.rx_reset
-    mac.io.tx_axis_aresetn := !ResetCatchAndSync(port.pcs.tx_clock, reset.toBool)
-    mac.io.rx_axis_aresetn := !ResetCatchAndSync(port.pcs.rx_clock, reset.toBool)
+    mac.io.tx_dcm_locked := !port.pcs.tx_reset.asBool
+    mac.io.rx_dcm_locked := !port.pcs.rx_reset.asBool
+    mac.io.tx_axis_aresetn := !ResetCatchAndSync(port.pcs.tx_clock, reset.asBool)
+    mac.io.rx_axis_aresetn := !ResetCatchAndSync(port.pcs.rx_clock, reset.asBool)
 
     // FIFO interface
     val txen = RegInit(false.B)
@@ -85,8 +84,8 @@ abstract class EthernetMAC(busWidthBytes: Int, base: BigInt)(implicit p: Paramet
         RegField(8),
         RegField.r(1, txQ.io.enq.ready, RegFieldDesc("tx_ready", "TX Ready")),
         RegField.r(1, rxQ.io.deq.valid, RegFieldDesc("rx_valid", "RX Valid")),
-        RegField.r(1, port.pcs.tx_reset, RegFieldDesc("tx_reset", "TX Reset")),
-        RegField.r(1, port.pcs.rx_reset, RegFieldDesc("rx_reset", "RX Reset")),
+        RegField.r(1, port.pcs.tx_reset.asBool, RegFieldDesc("tx_reset", "TX Reset")),
+        RegField.r(1, port.pcs.rx_reset.asBool, RegFieldDesc("rx_reset", "RX Reset")),
         RegField.r(1, mac.io.tx_axis_tready,  RegFieldDesc("mac_ready", "MAC Ready")),
 //        RegField.r(1, port.pcs.rx_lock, RegFieldDesc("rx_lock", "RX Lock")),
         RegField.r(1, port.pcs.sfp_detect, RegFieldDesc("sfp_detect", "SFP Detect")))),

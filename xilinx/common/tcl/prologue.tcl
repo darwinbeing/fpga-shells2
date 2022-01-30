@@ -26,11 +26,16 @@ while {[llength $argv]} {
     -post-impl-debug-tcl {
       set argv [lassign $argv[set argv {}] post_impl_debug_tcl]
     }
+    -env-var-srcs {
+      set argv [lassign $argv[set argv {}] env_var_srcs]
+    }
     default {
       return -code error [list {unknown option} $flag]
     }
   }
 }
+# tcl-env-srcs: Command line argument to pass the name of an environment variable that contains additional vsrcs 
+# (from what is contained in .F file) that you want to have read in
 
 if {![info exists top]} {
   return -code error [list {--top-module option is required}]
@@ -94,6 +99,15 @@ proc load_vsrc_manifest {obj vsrc_manifest} {
       lappend relative_files [file join [file dirname $vsrc_manifest] $path]
     }
   }
+  # Read environment variable vsrcs and append to relative_files
+  upvar #0 env_var_srcs env_var_srcs
+  set additions [info exists env_var_srcs]
+  if {$additions} {
+    if {[info exists ::env($env_var_srcs)]} {
+      set resources [split $::env($env_var_srcs) :]
+      set relative_files [list {*}$relative_files {*}$resources]
+    }
+  }
   add_files -norecurse -fileset $obj {*}$relative_files
   close $fp
 }
@@ -117,5 +131,5 @@ if {[get_filesets -quiet constrs_1] eq ""} {
 }
 
 set obj [current_fileset -constrset]
-add_files -quiet -norecurse -fileset $obj [lsort [glob -directory $constraintsdir -nocomplain {*.xdc}]]
 add_files -quiet -norecurse -fileset $obj [lsort [glob -directory $constraintsdir -nocomplain {*.tcl}]]
+add_files -quiet -norecurse -fileset $obj [lsort [glob -directory $constraintsdir -nocomplain {*.xdc}]]

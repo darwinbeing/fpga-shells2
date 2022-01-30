@@ -50,9 +50,8 @@ class PLLFactory(scope: IOShell, maxOutputs: Int, gen: PLLParameters => PLLInsta
     node
   }
 
-  scope { InModuleBody {
-    // Require all clock group names to be distinct
-    val sdcGroups = Map() ++ pllNodes.flatMap { case node =>
+  val plls: ModuleValue[Seq[(PLLInstance, PLLNode)]] = scope { InModuleBody {
+    val plls = pllNodes.flatMap { case node =>
       require (node.in.size == 1)
       val (in, edgeIn) = node.in(0)
       val (out, edgeOut) = node.out.unzip
@@ -79,7 +78,13 @@ class PLLFactory(scope: IOShell, maxOutputs: Int, gen: PLLParameters => PLLInsta
         o.clock := i
         o.reset := !pll.getLocked || in.reset
       }
+      Some((pll, node))
+    }
 
+    // Require all clock group names to be distinct
+    val sdcGroups = Map() ++ plls.flatMap { case tuple =>
+    val (pll, node) = tuple
+    val (out, edgeOut) = node.out.unzip
       val groupLabels = edgeOut.flatMap(e => Seq.fill(e.members.size) { e.sink.name })
       groupLabels zip pll.getClocks.map(x => IOPin(x))
     }.groupBy(_._1).mapValues(_.map(_._2))
@@ -87,5 +92,7 @@ class PLLFactory(scope: IOShell, maxOutputs: Int, gen: PLLParameters => PLLInsta
     // Ensure there are no clock groups with the same name
     require (sdcGroups.size == pllNodes.map(_.edges.out.size).sum)
     sdcGroups.foreach { case (_, clockPins) => scope.sdc.addGroup(pins = clockPins) }
+
+    plls
   } }
 }

@@ -2,8 +2,8 @@
 package sifive.fpgashells.shell.microsemi.polarfireevalkitshell
 
 import Chisel._
-import chisel3.core.{Input, Output, attach}
-import chisel3.experimental.{RawModule, Analog, withClockAndReset}
+import chisel3.{Input, Output, RawModule, withClockAndReset}
+import chisel3.experimental.{Analog, attach}
 
 import freechips.rocketchip.config._
 import freechips.rocketchip.devices.debug._
@@ -497,11 +497,10 @@ abstract class PolarFireEvalKitShell(implicit val p: Parameters) extends RawModu
   // DDR3 Subsystem Clocks
   //-----------------------------------------------------------------------
   val ddr3_clk_ccc = Module(new PolarFireCCC(
-		PolarFireCCCParameters(
-    	name = "ddr3_clk_ccc",
-    	pll_in_freq = 50,
-    	gl0Enabled = true,
-    	gl0_0_out_freq = 111.111)))
+    PLLParameters(
+      name = "ddr3_clk_ccc",
+      PLLInClockParameters(50),
+      Seq(PLLOutClockParameters(111.111)))))
  
   ddr3_clk_ccc.io.REF_CLK_0 := ref_clk0
   val ddr3_clk_in = ddr3_clk_ccc.io.OUT0_FABCLK_0.get
@@ -511,16 +510,17 @@ abstract class PolarFireEvalKitShell(implicit val p: Parameters) extends RawModu
   //-----------------------------------------------------------------------
   // Coreplex Clock Generator
   //-----------------------------------------------------------------------
-	val hart_clk_ccc = Module(new PolarFireCCC(
-		PolarFireCCCParameters(
-   		name = "hart_clk_ccc",
-    	pll_in_freq = 166.666,
-    	gl0Enabled = true,
-    	gl1Enabled = true,
-    	gl2Enabled = true,
-    	gl0_0_out_freq = 25,
-    	gl1_0_out_freq = 125,
-    	gl2_0_out_freq = 150)))
+  val hart_clk_ccc = Module(new PolarFireCCC(
+    PLLParameters(
+      name = "hart_clk_ccc",
+      PLLInClockParameters(166.666),
+      Seq(
+        PLLOutClockParameters(25),
+        PLLOutClockParameters(125),
+        PLLOutClockParameters(150)
+      )
+    )
+  ))
 
   val hart_clk_25   = hart_clk_ccc.io.OUT0_FABCLK_0.get
   val hart_clk_125  = hart_clk_ccc.io.OUT1_FABCLK_0.get

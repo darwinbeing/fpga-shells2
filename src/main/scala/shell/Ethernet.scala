@@ -9,8 +9,11 @@ import freechips.rocketchip.subsystem.{BaseSubsystem, PeripheryBus, PeripheryBus
 import freechips.rocketchip.tilelink.TLBusWrapper
 import freechips.rocketchip.interrupts.IntInwardNode
 
-case class EthernetOverlayParams()(implicit val p: Parameters)
-case object EthernetOverlayKey extends Field[Seq[DesignOverlay[EthernetOverlayParams, ModuleValue[EthernetPCS]]]](Nil)
+case class EthernetShellInput()
+case class EthernetDesignInput()(implicit val p: Parameters)
+case class EthernetOverlayOutput(eth: ModuleValue[EthernetPCS])
+case object EthernetOverlayKey extends Field[Seq[DesignPlacer[EthernetDesignInput, EthernetShellInput, EthernetOverlayOutput]]](Nil)
+trait EthernetShellPlacer[Shell] extends ShellPlacer[EthernetDesignInput, EthernetShellInput, EthernetOverlayOutput]
 
 class EthernetPads extends Bundle {
   val tx_p = Output(Bool())
@@ -23,11 +26,11 @@ class EthernetPads extends Bundle {
 
 class EthernetPCS extends Bundle {
   val rx_clock = Output(Clock())
-  val rx_reset = Output(Bool())
+  val rx_reset = Output(Reset())
   val rx_d = Output(UInt(64.W))
   val rx_c = Output(UInt(8.W))
   val tx_clock = Output(Clock())
-  val tx_reset = Output(Bool())
+  val tx_reset = Output(Reset())
   val tx_d = Input(UInt(64.W))
   val tx_c = Input(UInt(8.W))
   val loopback = Input(UInt(3.W))
@@ -35,11 +38,14 @@ class EthernetPCS extends Bundle {
   val sfp_detect = Output(Bool())
 }
 
-abstract class EthernetOverlay(val params: EthernetOverlayParams)
-  extends IOOverlay[EthernetPads, ModuleValue[EthernetPCS]]
+abstract class EthernetPlacedOverlay(
+  val name: String, val di: EthernetDesignInput, val si: EthernetShellInput)
+    extends IOPlacedOverlay[EthernetPads, EthernetDesignInput, EthernetShellInput, EthernetOverlayOutput]
 {
-  implicit val p = params.p
+  implicit val p = di.p
+
+  val pcsPads = InModuleBody { Wire(new EthernetPCS) }
 
   def ioFactory = new EthernetPads
-  val designOutput = InModuleBody { Wire(new EthernetPCS) }
+  def overlayOutput = EthernetOverlayOutput(eth = pcsPads)
 }

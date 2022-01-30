@@ -2,12 +2,13 @@
 package sifive.fpgashells.ip.xilinx
 
 import Chisel._
-import chisel3.core.{Input, Output, attach}
-import chisel3.experimental.{Analog}
+import chisel3.{Input, Output}
+import chisel3.experimental.{Analog, attach}
 import freechips.rocketchip.util.{ElaborationArtefacts}
 
 import sifive.blocks.devices.pinctrl.{BasePin}
 import sifive.fpgashells.clocks._
+import freechips.rocketchip.diplomacy.LazyModule
 
 //========================================================================
 // This file contains common devices used by our Xilinx FPGA flows and some

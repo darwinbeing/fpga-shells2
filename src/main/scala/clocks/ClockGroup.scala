@@ -8,8 +8,8 @@ import freechips.rocketchip.diplomacy._
 
 case class ClockGroupNode(groupName: String)(implicit valName: ValName)
   extends MixedNexusNode(ClockGroupImp, ClockImp)(
-    dFn = { _ => ClockSourceParameters() },
-    uFn = { seq => ClockGroupSinkParameters(name = groupName, members = seq) })
+	dFn = { _ => ClockSourceParameters() },
+	uFn = { seq => ClockGroupSinkParameters(name = groupName, members = seq) })
 
 class ClockGroup(groupName: String)(implicit p: Parameters) extends LazyModule
 {

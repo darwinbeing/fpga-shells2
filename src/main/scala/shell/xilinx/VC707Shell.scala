@@ -2,8 +2,8 @@
 package sifive.fpgashells.shell.xilinx.vc707shell
 
 import Chisel._
-import chisel3.core.{Input, Output, attach}
-import chisel3.experimental.{RawModule, Analog, withClockAndReset}
+import chisel3.{Input, Output, RawModule, withClockAndReset}
+import chisel3.experimental.{attach, Analog}
 
 import freechips.rocketchip.config._
 import freechips.rocketchip.devices.debug._
@@ -66,6 +66,7 @@ trait HasDebugJTAG { this: VC707Shell =>
 
   def connectDebugJTAG(dut: HasPeripheryDebugModuleImp, fmcxm105: Boolean = true): SystemJTAGIO = {
   
+    require(dut.debug.isDefined, "Connecting JTAG requires that debug module exists")
     ElaborationArtefacts.add(
     """debugjtag.vivado.tcl""",
     """set vc707debugjtag_vivado_tcl_dir [file dirname [file normalize [info script]]]
@@ -108,7 +109,7 @@ trait HasDebugJTAG { this: VC707Shell =>
       )
     }
    
-    val djtag     = dut.debug.systemjtag.get
+    val djtag     = dut.debug.get.systemjtag.get
 
     djtag.jtag.TCK := jtag_TCK
     djtag.jtag.TMS := jtag_TMS
@@ -116,9 +117,11 @@ trait HasDebugJTAG { this: VC707Shell =>
     jtag_TDO       := djtag.jtag.TDO.data
 
     djtag.mfr_id   := p(JtagDTMKey).idcodeManufId.U(11.W)
+    djtag.part_number := p(JtagDTMKey).idcodePartNum.U(16.W)
+    djtag.version  := p(JtagDTMKey).idcodeVersion.U(4.W)
 
     djtag.reset    := PowerOnResetFPGAOnly(dut_clock)
-    dut_ndreset    := dut.debug.ndreset
+    dut_ndreset    := dut.debug.get.ndreset
     djtag
   }
 }
@@ -208,7 +211,7 @@ trait HasVC707ChipLink { this: VC707Shell =>
         set_property PACKAGE_PIN V39 [get_ports {${direction1Pins}_data[28]}]
         set_property PACKAGE_PIN V40 [get_ports {${direction1Pins}_data[29]}]
         set_property PACKAGE_PIN P37 [get_ports {${direction1Pins}_data[30]}]
-        set_property PACKAGE_PIN P38 [get_ports {${direction1Pins}_data[31]}]
+        set_property PACKAGE_PIN P38 [get_ports {${direction1Pins}_data[31]}]""" + s"""
 
         set_property PACKAGE_PIN T36 [get_ports ${direction1Pins}_send]
         set_property PACKAGE_PIN R37 [get_ports ${direction1Pins}_rst]
@@ -308,7 +311,7 @@ trait HasVC707ChipLink { this: VC707Shell =>
         set_property SLEW FAST [get_ports {${direction1Pins}_data[3]}]
         set_property SLEW FAST [get_ports {${direction1Pins}_data[2]}]
         set_property SLEW FAST [get_ports {${direction1Pins}_data[1]}]
-        set_property SLEW FAST [get_ports {${direction1Pins}_data[0]}]
+        set_property SLEW FAST [get_ports {${direction1Pins}_data[0]}]""" + s"""
 
 
         set_property IOSTANDARD LVCMOS18 [get_ports ${direction0Pins}_clk]
@@ -378,6 +381,7 @@ trait HasVC707ChipLink { this: VC707Shell =>
     //dut.chiplink_xilinx_7series_phy.get.idelayctrl_refclk := sys_clock
   }
 }
+
 
 abstract class VC707Shell(implicit val p: Parameters) extends RawModule {
 
@@ -597,7 +601,7 @@ abstract class VC707Shell(implicit val p: Parameters) extends RawModule {
     // SPI
     ip_sdio_spi.io.spi_sck  := sd_spi_sck
     ip_sdio_spi.io.spi_cs   := sd_spi_cs
-    sd_spi_dq_i             := ip_sdio_spi.io.spi_dq_i.toBools
+    sd_spi_dq_i             := ip_sdio_spi.io.spi_dq_i.asBools
     ip_sdio_spi.io.spi_dq_o := sd_spi_dq_o.asUInt
   }
 

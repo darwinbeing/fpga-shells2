@@ -2,8 +2,7 @@
 package sifive.fpgashells.shell
 
 import chisel3._
-import chisel3.experimental.IO
-import chisel3.core.DataMirror
+import chisel3.experimental.{DataMirror, IO}
 import freechips.rocketchip.config._
 import freechips.rocketchip.util._
 import freechips.rocketchip.diplomacy._
@@ -15,7 +14,8 @@ case class IOPin(element: Element, index: Int = 0)
   require (index >= 0 && index < width.get)
 
   def name = {
-    val pin = element.instanceName.split("\\.").mkString("_")
+    //replace all [#]'s with _# in the pin base name, then append on the final [#] (pindex) if width > 1
+    val pin = element.instanceName.split("\\.").map(_.replaceAll("""\[(\d+)\]""", "_$1")).mkString("_")
     val path = element.parentPathName.split("\\.")
     val pindex = pin + (if (width.get > 1) s"[${index}]" else "")
     (path.drop(1) :+ pindex).mkString("/")
@@ -29,7 +29,7 @@ case class IOPin(element: Element, index: Int = 0)
   def sdcClock = s"[get_clocks -of_objects ${sdcPin}]"
 
   def isOutput = {
-    import chisel3.core.ActualDirection._
+    import chisel3.ActualDirection._
     DataMirror.directionOf(element) match {
       case Output => true
       case Input => false
@@ -39,7 +39,7 @@ case class IOPin(element: Element, index: Int = 0)
   }
 
   def isInput = {
-    import chisel3.core.ActualDirection._
+    import chisel3.ActualDirection._
     DataMirror.directionOf(element) match {
       case Output => false
       case Input => true
@@ -100,8 +100,8 @@ class SDC(val name: String)
     addRawClock(s"set_input_jitter ${name} ${jitterNs}")
   }
 
-  def addDerivedClock(name: => String, source: => IOPin, sink: => IOPin) {
-    addRawClock(s"create_generated_clock -name ${name} -divide_by 1 -source ${source.sdcPin} ${sink.sdcPin}")
+  def addDerivedClock(name: => String, source: => IOPin, sink: => IOPin, div: => Int = 1) {
+    addRawClock(s"create_generated_clock -name ${name} -divide_by ${div} -source ${source.sdcPin} ${sink.sdcPin}")
   }
 
   def addGroup(clocks: => Seq[String] = Nil, pins: => Seq[IOPin] = Nil) {
@@ -112,7 +112,7 @@ class SDC(val name: String)
       val clocksStr = (" [get_clocks {" +: clocksList).mkString(sep) + " \\\n    }]"
       val pinsStr   = (" [get_clocks -of_objects [get_pins {"  +: pinsList ).mkString(sep) + " \\\n    }]]"
       val portsStr  = (" [get_clocks -of_objects [get_ports {" +: portsList).mkString(sep) + " \\\n    }]]"
-      val str = s"  -group [list${if (clocksList.isEmpty) "" else clocksStr}${if (pinsList.isEmpty) "" else pinsStr}${if (portsList.isEmpty) "" else portsStr}]"
+      val str = s"  -group [list${if (clocksList.isEmpty) "" else clocksStr}${if (pinsList.isEmpty) "" else pinsStr}${if (portsList.isEmpty) "" else portsStr}]"  
       if (clocksList.isEmpty && pinsList.isEmpty && portsList.isEmpty) "" else str
     }
     addRawGroup(thunk)
@@ -139,10 +139,12 @@ class SDC(val name: String)
 }
 
 // An IOOverlay is an Overlay with a public shell-level IO
-trait IOOverlay[IO <: Data, DesignOutput] extends Overlay[DesignOutput]
+
+trait IOPlacedOverlay[IO <: Data, DesignInput, ShellInput, OverlayOutput] extends PlacedOverlay[DesignInput, ShellInput, OverlayOutput]
 {
   def ioFactory: IO
   def shell: IOShell
+  def sinkScope: LazyScope = shell
 
   val io = shell { InModuleBody {
     val port = IO(ioFactory)
