@@ -2,8 +2,8 @@
 package sifive.fpgashells.shell.xilinx.hbirdshell
 
 import Chisel._
-import chisel3.core.{Input, Output, attach}
-import chisel3.experimental.{RawModule, Analog, withClockAndReset}
+import chisel3.{Input, Output, RawModule, withClockAndReset}
+import chisel3.experimental.{attach, Analog}
 
 import freechips.rocketchip.config._
 import freechips.rocketchip.devices.debug._
@@ -258,7 +258,7 @@ abstract class HBirdShell(implicit val p: Parameters) extends RawModule {
     // JTAG PINS
     //-------------------------------------------------------------------
 
-    val djtag     = dut.debug.systemjtag.get
+    val djtag     = dut.debug.get.systemjtag.get
 
     djtag.jtag.TCK := dut_jtag_TCK
     djtag.jtag.TMS := dut_jtag_TMS
@@ -268,7 +268,7 @@ abstract class HBirdShell(implicit val p: Parameters) extends RawModule {
     djtag.mfr_id   := p(JtagDTMKey).idcodeManufId.U(11.W)
 
     djtag.reset    := dut_jtag_reset
-    dut_ndreset    := dut.debug.ndreset
+    dut_ndreset    := dut.debug.get.ndreset
 
     djtag
   }
