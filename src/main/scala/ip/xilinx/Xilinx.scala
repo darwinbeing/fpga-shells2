@@ -26,19 +26,6 @@ class mmcm extends BlackBox {
     val clk_out1 = Output(Clock())
     val clk_out2 = Output(Clock())
     val clk_out3 = Output(Clock())
-    val clk_out4 = Output(Clock())
-    val resetn   = Input(Bool())
-    val locked   = Output(Bool())
-  }
-}
-
-class mmcm4 extends BlackBox {
-  val io = new Bundle {
-    val clk_in1  = Input(Clock())
-    val clk_out1 = Output(Clock())
-    val clk_out2 = Output(Clock())
-    val clk_out3 = Output(Clock())
-    val clk_out4 = Output(Clock())
     val resetn   = Input(Bool())
     val locked   = Output(Bool())
   }
@@ -110,45 +97,6 @@ object PowerOnResetFPGAOnly {
   def apply (clk: Clock): Bool = apply(clk, "fpga_power_on")
 }
 
-//-------------------------------------------------------------------------
-// STARTUPE2
-//-------------------------------------------------------------------------
-/** STARTUPE2 -- this generates interface to the configuration logic control
-  * and status signals.
-  * See "(UG470) 7 Series FPGAs Configuration User Guide"
-  */
-
-class STARTUPE2 extends BlackBox {
-  val io = new Bundle {
-    val CLK = Input(Bool())
-    val GSR = Input(Bool())
-    val GTS = Input(Bool())
-    val KEYCLEARB = Input(Bool())
-    val PACK = Input(Bool())
-    val USRCCLKO = Input(Bool())
-    val USRCCLKTS = Input(Bool())
-    val USRDONEO = Input(Bool())
-    val USRDONETS = Input(Bool())
-  }
-}
-
-object STARTUPE2 {
-
-  def apply(usrcclk0: Bool) = {
-    val startupe2 = Module(new STARTUPE2)
-    startupe2.io.CLK := false.B
-    startupe2.io.GSR := false.B
-    startupe2.io.GTS := false.B
-    startupe2.io.KEYCLEARB := false.B
-    startupe2.io.PACK := false.B
-    startupe2.io.USRCCLKO := usrcclk0
-    startupe2.io.USRCCLKTS := false.B
-    startupe2.io.USRDONEO := true.B
-    startupe2.io.USRDONETS := true.B
-
-    startupe2
-  }
-}
 
 //-------------------------------------------------------------------------
 // vc707_sys_clock_mmcm
@@ -171,15 +119,15 @@ class Series7MMCM(c : PLLParameters) extends BlackBox with PLLInstance {
   val moduleName = c.name
   override def desiredName = c.name
 
-  def getClocks = Seq() ++ io.clk_out1 ++ io.clk_out2 ++
-                           io.clk_out3 ++ io.clk_out4 ++
-                           io.clk_out5 ++ io.clk_out6 ++
+  def getClocks = Seq() ++ io.clk_out1 ++ io.clk_out2 ++ 
+                           io.clk_out3 ++ io.clk_out4 ++ 
+                           io.clk_out5 ++ io.clk_out6 ++ 
                            io.clk_out7
   def getInput = io.clk_in1
   def getReset = Some(io.reset)
   def getLocked = io.locked
   def getClockNames = Seq.tabulate (c.req.size) { i =>
-    s"${c.name}/inst/mmcm_adv_inst/CLKOUT${i}"
+    s"${c.name}/inst/mmcm_adv_inst/CLKOUT${i}" 
   }
 
   val used = Seq.tabulate(7) { i =>
@@ -235,36 +183,6 @@ class Series7MMCM(c : PLLParameters) extends BlackBox with PLLInstance {
        |set mult [get_property CONFIG.MMCM_CLKFBOUT_MULT_F [get_ips ${moduleName}]]
        |set div1 [get_property CONFIG.MMCM_DIVCLK_DIVIDE [get_ips ${moduleName}]]
        |${checks}""".stripMargin)
-}
-
-//-------------------------------------------------------------------------
-// hbird_reset
-//-------------------------------------------------------------------------
-
-class hbird_reset() extends BlackBox
-{
-  val io = new Bundle{
-    val areset = Bool(INPUT)
-    val clock1 = Clock(INPUT)
-    val reset1 = Bool(OUTPUT)
-    val clock2 = Clock(INPUT)
-    val reset2 = Bool(OUTPUT)
-  }
-}
-
-//-------------------------------------------------------------------------
-// nexys4ddr_reset
-//-------------------------------------------------------------------------
-
-class nexys4ddr_reset() extends BlackBox
-{
-  val io = new Bundle{
-    val areset = Bool(INPUT)
-    val clock1 = Clock(INPUT)
-    val reset1 = Bool(OUTPUT)
-    val clock2 = Clock(INPUT)
-    val reset2 = Bool(OUTPUT)
-  }
 }
 
 //-------------------------------------------------------------------------
@@ -428,11 +346,8 @@ class sdio_spi_bridge() extends BlackBox
   val io = new Bundle{
     val clk      = Clock(INPUT)
     val reset    = Bool(INPUT)
-
     val sd_cmd   = Analog(1.W)
     val sd_dat   = Analog(4.W)
-    val sd_sck   = Bool(OUTPUT)
-
     val spi_sck  = Bool(INPUT)
     val spi_cs   = Bool(INPUT)
     val spi_dq_o = Bits(INPUT,4)
