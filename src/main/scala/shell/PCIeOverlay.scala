@@ -3,8 +3,6 @@ package sifive.fpgashells.shell
 
 import chisel3._
 import freechips.rocketchip.config._
-import freechips.rocketchip.amba.axi4._
-import freechips.rocketchip.amba.axi4stream._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.interrupts._
@@ -29,22 +27,6 @@ case object PCIeOverlayKey extends Field[Seq[DesignPlacer[PCIeDesignInput, PCIeS
 abstract class PCIePlacedOverlay[IO <: Data](
   val name: String, val di: PCIeDesignInput, val si: PCIeShellInput)
     extends IOPlacedOverlay[IO, PCIeDesignInput, PCIeShellInput, PCIeOverlayOutput]
-{
-  implicit val p = di.p
-}
-
-case class PCIeStreamOverlayOutput(
-  requesterNode: AXI4StreamNode,
-  completerNode: AXI4StreamNode,
-  csrNode: AXI4InwardNode,
-  intNode: IntOutwardNode)
-trait PCIeStreamShellPlacer[Shell] extends ShellPlacer[PCIeDesignInput, PCIeShellInput, PCIeStreamOverlayOutput]
-
-case object PCIeStreamOverlayKey extends Field[Seq[DesignPlacer[PCIeDesignInput, PCIeShellInput, PCIeStreamOverlayOutput]]](Nil)
-
-abstract class PCIeStreamPlacedOverlay[IO <: Data](
-  val name: String, val di: PCIeDesignInput, val si: PCIeShellInput)
-    extends IOPlacedOverlay[IO, PCIeDesignInput, PCIeShellInput, PCIeStreamOverlayOutput]
 {
   implicit val p = di.p
 }
