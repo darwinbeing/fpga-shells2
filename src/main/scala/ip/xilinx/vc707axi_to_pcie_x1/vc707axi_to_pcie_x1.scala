@@ -5,6 +5,8 @@ import Chisel._
 import freechips.rocketchip.config._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.amba.axi4._
+import freechips.rocketchip.amba.axis._
+import freechips.rocketchip.amba.axi4stream._
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.util.{ElaborationArtefacts}
 
@@ -397,10 +399,397 @@ class VC707AXIToPCIeX1(implicit p:Parameters) extends LazyModule
     blackbox.io.m_axi_rvalid     := m.r.valid
     m.r.ready                    := blackbox.io.m_axi_rready
   }
-  
+
   ElaborationArtefacts.add(
     "vc707axi_to_pcie_x1.vivado.tcl",
-    """ 
+    """
+      create_ip -vendor xilinx.com -library ip -version 2.8 -name axi_pcie -module_name vc707axi_to_pcie_x1 -dir $ipdir -force
+      set_property -dict [list \
+      CONFIG.AXIBAR2PCIEBAR_0             {0x40000000} \
+      CONFIG.AXIBAR2PCIEBAR_1             {0x00000000} \
+      CONFIG.AXIBAR2PCIEBAR_2             {0x00000000} \
+      CONFIG.AXIBAR2PCIEBAR_3             {0x00000000} \
+      CONFIG.AXIBAR2PCIEBAR_4             {0x00000000} \
+      CONFIG.AXIBAR2PCIEBAR_5             {0x00000000} \
+      CONFIG.AXIBAR_0                     {0x40000000} \
+      CONFIG.AXIBAR_1                     {0xFFFFFFFF} \
+      CONFIG.AXIBAR_2                     {0xFFFFFFFF} \
+      CONFIG.AXIBAR_3                     {0xFFFFFFFF} \
+      CONFIG.AXIBAR_4                     {0xFFFFFFFF} \
+      CONFIG.AXIBAR_5                     {0xFFFFFFFF} \
+      CONFIG.AXIBAR_AS_0                  {true} \
+      CONFIG.AXIBAR_AS_1                  {false} \
+      CONFIG.AXIBAR_AS_2                  {false} \
+      CONFIG.AXIBAR_AS_3                  {false} \
+      CONFIG.AXIBAR_AS_4                  {false} \
+      CONFIG.AXIBAR_AS_5                  {false} \
+      CONFIG.AXIBAR_HIGHADDR_0            {0x5FFFFFFF} \
+      CONFIG.AXIBAR_HIGHADDR_1            {0x00000000} \
+      CONFIG.AXIBAR_HIGHADDR_2            {0x00000000} \
+      CONFIG.AXIBAR_HIGHADDR_3            {0x00000000} \
+      CONFIG.AXIBAR_HIGHADDR_4            {0x00000000} \
+      CONFIG.AXIBAR_HIGHADDR_5            {0x00000000} \
+      CONFIG.AXIBAR_NUM                   {1} \
+      CONFIG.BAR0_ENABLED                 {true} \
+      CONFIG.BAR0_SCALE                   {Gigabytes} \
+      CONFIG.BAR0_SIZE                    {4} \
+      CONFIG.BAR0_TYPE                    {Memory} \
+      CONFIG.BAR1_ENABLED                 {false} \
+      CONFIG.BAR1_SCALE                   {N/A} \
+      CONFIG.BAR1_SIZE                    {8} \
+      CONFIG.BAR1_TYPE                    {N/A} \
+      CONFIG.BAR2_ENABLED                 {false} \
+      CONFIG.BAR2_SCALE                   {N/A} \
+      CONFIG.BAR2_SIZE                    {8} \
+      CONFIG.BAR2_TYPE                    {N/A} \
+      CONFIG.BAR_64BIT                    {true} \
+      CONFIG.BASEADDR                     {0x00000000} \
+      CONFIG.BASE_CLASS_MENU              {Bridge_device} \
+      CONFIG.CLASS_CODE                   {0x060400} \
+      CONFIG.COMP_TIMEOUT                 {50ms} \
+      CONFIG.Component_Name               {design_1_axi_pcie_1_0} \
+      CONFIG.DEVICE_ID                    {0x7111} \
+      CONFIG.ENABLE_CLASS_CODE            {true} \
+      CONFIG.HIGHADDR                     {0x03FFFFFF} \
+      CONFIG.INCLUDE_BAROFFSET_REG        {true} \
+      CONFIG.INCLUDE_RC                   {Root_Port_of_PCI_Express_Root_Complex} \
+      CONFIG.INTERRUPT_PIN                {false} \
+      CONFIG.MAX_LINK_SPEED               {2.5_GT/s} \
+      CONFIG.MSI_DECODE_ENABLED           {true} \
+      CONFIG.M_AXI_ADDR_WIDTH             {32} \
+      CONFIG.M_AXI_DATA_WIDTH             {64} \
+      CONFIG.NO_OF_LANES                  {X1} \
+      CONFIG.NUM_MSI_REQ                  {0} \
+      CONFIG.PCIEBAR2AXIBAR_0_SEC         {1} \
+      CONFIG.PCIEBAR2AXIBAR_0             {0x00000000} \
+      CONFIG.PCIEBAR2AXIBAR_1             {0xFFFFFFFF} \
+      CONFIG.PCIEBAR2AXIBAR_1_SEC         {1} \
+      CONFIG.PCIEBAR2AXIBAR_2             {0xFFFFFFFF} \
+      CONFIG.PCIEBAR2AXIBAR_2_SEC         {1} \
+      CONFIG.PCIE_BLK_LOCN                {X1Y1} \
+      CONFIG.PCIE_USE_MODE                {GES_and_Production} \
+      CONFIG.REF_CLK_FREQ                 {100_MHz} \
+      CONFIG.REV_ID                       {0x00} \
+      CONFIG.SLOT_CLOCK_CONFIG            {true} \
+      CONFIG.SUBSYSTEM_ID                 {0x0007} \
+      CONFIG.SUBSYSTEM_VENDOR_ID          {0x10EE} \
+      CONFIG.SUB_CLASS_INTERFACE_MENU     {Host_bridge} \
+      CONFIG.S_AXI_ADDR_WIDTH             {32} \
+      CONFIG.S_AXI_DATA_WIDTH             {64} \
+      CONFIG.S_AXI_ID_WIDTH               {4} \
+      CONFIG.S_AXI_SUPPORTS_NARROW_BURST  {false} \
+      CONFIG.VENDOR_ID                    {0x10EE} \
+      CONFIG.XLNX_REF_BOARD               {None} \
+      CONFIG.axi_aclk_loopback            {false} \
+      CONFIG.en_ext_ch_gt_drp             {false} \
+      CONFIG.en_ext_clk                   {false} \
+      CONFIG.en_ext_gt_common             {false} \
+      CONFIG.en_ext_pipe_interface        {false} \
+      CONFIG.en_transceiver_status_ports  {false} \
+      CONFIG.no_slv_err                   {false} \
+      CONFIG.rp_bar_hide                  {true} \
+      CONFIG.shared_logic_in_core         {false} ] [get_ips vc707axi_to_pcie_x1]"""
+  )
+}
+
+//scalastyle:off
+//turn off linter: blackbox name must match verilog module
+class vc707axi_to_pcie_x16(dataWidth: Int = 512) extends BlackBox
+{
+  val io = new Bundle with VC707AXIToPCIeX1IOSerial
+                      with VC707AXIToPCIeX1IOClocksReset {
+    //refclk
+    val REFCLK                = Bool(INPUT)
+
+    //clock, reset, control
+    val INTX_MSI_Request      = Bool(INPUT)
+    val INTX_MSI_Grant        = Bool(OUTPUT)
+    val MSI_enable            = Bool(OUTPUT)
+    val MSI_Vector_Num        = Bits(INPUT,5)
+    val MSI_Vector_Width      = Bits(OUTPUT,3)
+
+    //interrupt
+    val interrupt_out         = Bool(OUTPUT)
+
+    val AXIS_PCIE_DATA_WIDTH     = dataWidth
+    val AXIS_PCIE_KEEP_WIDTH     = AXIS_PCIE_DATA_WIDTH/32
+    val AXIS_PCIE_RC_USER_WIDTH  = if(AXIS_PCIE_DATA_WIDTH < 512)  75 else 161
+    val AXIS_PCIE_RQ_USER_WIDTH  = if(AXIS_PCIE_DATA_WIDTH < 512)  62 else 137
+    val AXIS_PCIE_CQ_USER_WIDTH  = if(AXIS_PCIE_DATA_WIDTH < 512)  85 else 183
+    val AXIS_PCIE_CC_USER_WIDTH  = if(AXIS_PCIE_DATA_WIDTH < 512)  33 else 81
+
+    val m_axis_rq_tdata       = Bits(OUTPUT, AXIS_PCIE_DATA_WIDTH)
+    val m_axis_rq_tkeep       = Bits(OUTPUT, AXIS_PCIE_KEEP_WIDTH)
+    val m_axis_rq_tlast       = Bool(OUTPUT)
+    val m_axis_rq_tready      = Bool(INPUT)
+    val m_axis_rq_tuser       = Bits(OUTPUT, AXIS_PCIE_RQ_USER_WIDTH)
+    val m_axis_rq_tvalid      = Bool(OUTPUT)
+
+    val s_axis_rc_tdata       = Bits(INPUT, AXIS_PCIE_DATA_WIDTH)
+    val s_axis_rc_tkeep       = Bits(INPUT, AXIS_PCIE_KEEP_WIDTH)
+    val s_axis_rc_tlast       = Bool(INPUT)
+    val s_axis_rc_tready      = Bool(OUTPUT)
+    val s_axis_rc_tuser       = Bits(INPUT, AXIS_PCIE_RC_USER_WIDTH)
+    val s_axis_rc_tvalid      = Bool(INPUT)
+
+    val s_axis_cq_tdata       = Bits(INPUT, AXIS_PCIE_DATA_WIDTH)
+    val s_axis_cq_tkeep       = Bits(INPUT, AXIS_PCIE_KEEP_WIDTH)
+    val s_axis_cq_tlast       = Bool(INPUT)
+    val s_axis_cq_tready      = Bool(OUTPUT)
+    val s_axis_cq_tuser       = Bits(INPUT, AXIS_PCIE_CQ_USER_WIDTH)
+    val s_axis_cq_tvalid      = Bool(INPUT)
+
+    val m_axis_cc_tdata       = Bits(OUTPUT, AXIS_PCIE_DATA_WIDTH)
+    val m_axis_cc_tkeep       = Bits(OUTPUT, AXIS_PCIE_KEEP_WIDTH)
+    val m_axis_cc_tlast       = Bool(OUTPUT)
+    val m_axis_cc_tready      = Bool(INPUT)
+    val m_axis_cc_tuser       = Bits(OUTPUT, AXIS_PCIE_CC_USER_WIDTH)
+    val m_axis_cc_tvalid      = Bool(OUTPUT)
+
+    //axi lite master for control
+    val m_axi_csr_awaddr      = Bits(OUTPUT,32)
+    val m_axi_csr_awprot      = Bits(OUTPUT,3)
+    val m_axi_csr_awvalid     = Bool(OUTPUT)
+    val m_axi_csr_awready     = Bool(INPUT)
+    val m_axi_csr_wdata       = Bits(OUTPUT,32)
+    val m_axi_csr_wstrb       = Bits(OUTPUT,4)
+    val m_axi_csr_wvalid      = Bool(OUTPUT)
+    val m_axi_csr_wready      = Bool(INPUT)
+    val m_axi_csr_bresp       = Bits(INPUT,2)
+    val m_axi_csr_bvalid      = Bool(INPUT)
+    val m_axi_csr_bready      = Bool(OUTPUT)
+    val m_axi_csr_araddr      = Bits(OUTPUT,32)
+    val m_axi_csr_arprot      = Bits(OUTPUT,3)
+    val m_axi_csr_arvalid     = Bool(OUTPUT)
+    val m_axi_csr_arready     = Bool(INPUT)
+    val m_axi_csr_rdata       = Bits(INPUT,32)
+    val m_axi_csr_rresp       = Bits(INPUT,2)
+    val m_axi_csr_rvalid      = Bool(INPUT)
+    val m_axi_csr_rready      = Bool(OUTPUT)
+
+    //axi lite slave for control
+    val s_axi_ctl_awaddr      = Bits(INPUT,32)
+    val s_axi_ctl_awvalid     = Bool(INPUT)
+    val s_axi_ctl_awready     = Bool(OUTPUT)
+    val s_axi_ctl_wdata       = Bits(INPUT,32)
+    val s_axi_ctl_wstrb       = Bits(INPUT,4)
+    val s_axi_ctl_wvalid      = Bool(INPUT)
+    val s_axi_ctl_wready      = Bool(OUTPUT)
+    val s_axi_ctl_bresp       = Bits(OUTPUT,2)
+    val s_axi_ctl_bvalid      = Bool(OUTPUT)
+    val s_axi_ctl_bready      = Bool(INPUT)
+    val s_axi_ctl_araddr      = Bits(INPUT,32)
+    val s_axi_ctl_arvalid     = Bool(INPUT)
+    val s_axi_ctl_arready     = Bool(OUTPUT)
+    val s_axi_ctl_rdata       = Bits(OUTPUT,32)
+    val s_axi_ctl_rresp       = Bits(OUTPUT,2)
+    val s_axi_ctl_rvalid      = Bool(OUTPUT)
+    val s_axi_ctl_rready      = Bool(INPUT)
+ }
+}
+
+//wrap vc707_axi_to_pcie_x16 black box in Nasti Bundles
+
+class VC707AXIToPCIeX16(implicit p:Parameters) extends LazyModule
+{
+  val device = new SimpleDevice("pci", Seq("xlnx,axi-pcie-host-1.00.a")) {
+    override def describe(resources: ResourceBindings): Description = {
+      val Description(name, mapping) = super.describe(resources)
+      val intc = "pcie_intc"
+      def ofInt(x: Int) = Seq(ResourceInt(BigInt(x)))
+      def ofMap(x: Int) = Seq(0, 0, 0, x).flatMap(ofInt) ++ Seq(ResourceReference(intc)) ++ ofInt(x)
+      val extra = Map(
+        "#address-cells"     -> ofInt(3),
+        "#size-cells"        -> ofInt(2),
+        "#interrupt-cells"   -> ofInt(1),
+        "device_type"        -> Seq(ResourceString("pci")),
+        "interrupt-map-mask" -> Seq(0, 0, 0, 7).flatMap(ofInt),
+        "interrupt-map"      -> Seq(1, 2, 3, 4).flatMap(ofMap),
+        "ranges"             -> resources("ranges").map(x =>
+                                  (x: @unchecked) match { case Binding(_, ResourceAddress(address, perms)) =>
+                                                               ResourceMapping(address, BigInt(0x02000000) << 64, perms) }),
+        "interrupt-controller" -> Seq(ResourceMap(labels = Seq(intc), value = Map(
+          "interrupt-controller" -> Nil,
+          "#address-cells"       -> ofInt(0),
+          "#interrupt-cells"     -> ofInt(1)))))
+      Description(name, mapping ++ extra)
+    }
+  }
+
+  val slave = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
+    slaves = Seq(AXI4SlaveParameters(
+      address       = List(AddressSet(0x40000000L, 0x1fffffffL)),
+      resources     = Seq(Resource(device, "ranges")),
+      executable    = true,
+      supportsWrite = TransferSizes(1, 128),
+      supportsRead  = TransferSizes(1, 128))),
+    beatBytes = 8)))
+
+  val control = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
+    slaves = Seq(AXI4SlaveParameters(
+      address       = List(AddressSet(0x2000000000L, 0x3ffffffL)), // when truncated to 32-bits, is 0
+      resources     = device.reg("control"),
+      supportsWrite = TransferSizes(1, 4),
+      supportsRead  = TransferSizes(1, 4),
+      interleavedId = Some(0))), // AXI4-Lite never interleaves responses
+    beatBytes = 4)))
+
+  val master = AXI4MasterNode(Seq(AXI4MasterPortParameters(
+    masters = Seq(AXI4MasterParameters(
+      name    = "VC707 PCIe",
+      id      = IdRange(0, 1),
+      aligned = false)))))
+
+  val csrmaster = AXI4MasterNode(Seq(AXI4MasterPortParameters(
+    masters = Seq(AXI4MasterParameters(
+      name    = "VC707 PCIe",
+      id      = IdRange(0, 1),
+      aligned = false)))))
+
+  val csrslave = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
+    slaves = Seq(AXI4SlaveParameters(
+      address       = List(AddressSet(0x2000000000L, 0x3ffffffL)), // when truncated to 32-bits, is 0
+      resources     = device.reg("control"),
+      supportsWrite = TransferSizes(1, 4),
+      supportsRead  = TransferSizes(1, 4),
+      interleavedId = Some(0))), // AXI4-Lite never interleaves responses
+    beatBytes = 4)))
+
+  // val rqMaster = AXISMasterNode(Seq(AXISMasterPortParameters(
+  //   masters = Seq(AXISMasterParameters(
+  //     name    = "VC707 PCIe",
+  //     id      = IdRange(0, 1),
+  //     aligned = false)))))
+
+  val rqmaster = AXI4StreamMasterNode(AXI4StreamMasterParameters(n = 2))
+  val rcslave  = AXI4StreamSlaveNode(AXI4StreamSlaveParameters())
+  val ccslave  = AXI4StreamSlaveNode(AXI4StreamSlaveParameters())
+  val cqmaster = AXI4StreamMasterNode(AXI4StreamMasterParameters(n = 2))
+
+  val intnode = IntSourceNode(IntSourcePortSimple(resources = device.int))
+
+  lazy val module = new LazyModuleImp(this) {
+    // The master on the control port must be AXI-lite
+    require (control.edges.in(0).master.endId == 1)
+    // Must have exactly the right number of idBits
+    require (slave.edges.in(0).bundle.idBits == 4)
+
+    class VC707AXIToPCIeX1IOBundle extends Bundle with VC707AXIToPCIeX1IOSerial
+                                                  with VC707AXIToPCIeX1IOClocksReset;
+
+    val io = IO(new Bundle {
+      val port = new VC707AXIToPCIeX1IOBundle
+      val REFCLK = Bool(INPUT)
+    })
+
+    val blackbox = Module(new vc707axi_to_pcie_x16)
+
+    val (s, _) = slave.in(0)
+    val (c, _) = control.in(0)
+    val (m, _) = master.out(0)
+    val (i, _) = intnode.out(0)
+
+    val (rqm, _) = rqmaster.out(0)
+    val (rcs, _) = rcslave.in(0)
+    val (cqs, _) = rcslave.in(0)
+    val (ccm, _) = rqmaster.out(0)
+    val (csrs, _) = csrslave.in(0)
+
+    //to top level
+    blackbox.io.axi_aresetn         := io.port.axi_aresetn
+    io.port.axi_aclk_out            := blackbox.io.axi_aclk_out
+    io.port.axi_ctl_aclk_out        := blackbox.io.axi_ctl_aclk_out
+    io.port.mmcm_lock               := blackbox.io.mmcm_lock
+    io.port.pci_exp_txp             := blackbox.io.pci_exp_txp
+    io.port.pci_exp_txn             := blackbox.io.pci_exp_txn
+    blackbox.io.pci_exp_rxp         := io.port.pci_exp_rxp
+    blackbox.io.pci_exp_rxn         := io.port.pci_exp_rxn
+    i(0)                            := blackbox.io.interrupt_out
+    blackbox.io.REFCLK              := io.REFCLK
+
+    rqm.bits.data                   := blackbox.io.m_axis_rq_tdata
+    rqm.bits.keep                   := blackbox.io.m_axis_rq_tkeep
+    rqm.bits.last                   := blackbox.io.m_axis_rq_tlast
+    blackbox.io.m_axis_rq_tready    := rqm.ready
+    rqm.bits.user                   := blackbox.io.m_axis_rq_tuser
+    rqm.valid                       := blackbox.io.m_axis_rq_tvalid
+
+    blackbox.io.s_axis_rc_tdata     := rcs.bits.data
+    blackbox.io.s_axis_rc_tkeep     := rcs.bits.keep
+    blackbox.io.s_axis_rc_tlast     := rcs.bits.last
+    rcs.ready                       := blackbox.io.s_axis_rc_tready
+    blackbox.io.s_axis_rc_tuser     := rcs.bits.user
+    blackbox.io.s_axis_rc_tvalid    := rcs.valid
+
+    blackbox.io.s_axis_cq_tdata     := cqs.bits.data
+    blackbox.io.s_axis_cq_tkeep     := cqs.bits.keep
+    blackbox.io.s_axis_cq_tlast     := cqs.bits.last
+    cqs.ready                       := blackbox.io.s_axis_cq_tready
+    blackbox.io.s_axis_cq_tuser     := cqs.bits.user
+    blackbox.io.s_axis_cq_tvalid    := cqs.valid
+
+    ccm.bits.data                   := blackbox.io.m_axis_cc_tdata
+    ccm.bits.keep                   := blackbox.io.m_axis_cc_tkeep
+    ccm.bits.last                   := blackbox.io.m_axis_cc_tlast
+    blackbox.io.m_axis_cc_tready    := ccm.ready
+    ccm.bits.user                   := blackbox.io.m_axis_cc_tuser
+    ccm.valid                       := blackbox.io.m_axis_cc_tvalid
+
+    //csr
+    //axi-lite master interface write address
+    csrs.aw.bits.addr               := blackbox.io.m_axi_csr_awaddr
+    csrs.aw.valid                   := blackbox.io.m_axi_csr_awvalid
+    blackbox.io.m_axi_csr_awready   := csrs.aw.ready
+    //axi-lite master interface write data ports
+    csrs.w.bits.data                := blackbox.io.m_axi_csr_wdata
+    csrs.w.bits.strb                := blackbox.io.m_axi_csr_wstrb
+    csrs.w.valid                    := blackbox.io.m_axi_csr_wvalid
+    blackbox.io.m_axi_csr_wready    := csrs.w.ready
+    //axi-lite master interface write response
+    csrs.b.ready                    := blackbox.io.m_axi_csr_bready
+    blackbox.io.m_axi_csr_bresp     := csrs.b.bits.resp
+    blackbox.io.m_axi_csr_bvalid    := csrs.b.valid
+    //axi-lite master AXI interface read address ports
+    csrs.ar.bits.addr               := blackbox.io.m_axi_csr_araddr
+    csrs.ar.valid                   := blackbox.io.m_axi_csr_arvalid
+    blackbox.io.m_axi_csr_arready   := csrs.ar.ready
+    //master AXI interface read data ports
+    csrs.r.ready                    := blackbox.io.m_axi_csr_rready
+    blackbox.io.m_axi_csr_rdata     := csrs.r.bits.data
+    blackbox.io.m_axi_csr_rresp     := csrs.r.bits.resp
+    blackbox.io.m_axi_csr_rvalid    := csrs.r.valid
+
+    //ctl
+    //axi-lite slave interface write address
+    blackbox.io.s_axi_ctl_awaddr    := c.aw.bits.addr
+    blackbox.io.s_axi_ctl_awvalid   := c.aw.valid
+    c.aw.ready                 := blackbox.io.s_axi_ctl_awready
+    //axi-lite slave interface write data ports
+    blackbox.io.s_axi_ctl_wdata     := c.w.bits.data
+    blackbox.io.s_axi_ctl_wstrb     := c.w.bits.strb
+    blackbox.io.s_axi_ctl_wvalid    := c.w.valid
+    c.w.ready                  := blackbox.io.s_axi_ctl_wready
+    //axi-lite slave interface write response
+    blackbox.io.s_axi_ctl_bready    := c.b.ready
+    c.b.bits.id                := UInt(0)
+    c.b.bits.resp              := blackbox.io.s_axi_ctl_bresp
+    c.b.valid                  := blackbox.io.s_axi_ctl_bvalid
+    //axi-lite slave AXI interface read address ports
+    blackbox.io.s_axi_ctl_araddr    := c.ar.bits.addr
+    blackbox.io.s_axi_ctl_arvalid   := c.ar.valid
+    c.ar.ready                 := blackbox.io.s_axi_ctl_arready
+    //slave AXI interface read data ports
+    blackbox.io.s_axi_ctl_rready    := c.r.ready
+    c.r.bits.id                := UInt(0)
+    c.r.bits.data              := blackbox.io.s_axi_ctl_rdata
+    c.r.bits.resp              := blackbox.io.s_axi_ctl_rresp
+    c.r.bits.last              := Bool(true)
+    c.r.valid                  := blackbox.io.s_axi_ctl_rvalid
+  }
+
+  ElaborationArtefacts.add(
+    "vc707axi_to_pcie_x1.vivado.tcl",
+    """
       create_ip -vendor xilinx.com -library ip -version 2.8 -name axi_pcie -module_name vc707axi_to_pcie_x1 -dir $ipdir -force
       set_property -dict [list \
       CONFIG.AXIBAR2PCIEBAR_0             {0x40000000} \

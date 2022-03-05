@@ -4,9 +4,12 @@ package sifive.fpgashells.shell.xilinx
 import chisel3._
 import chisel3.experimental.IO
 import freechips.rocketchip.config._
+import freechips.rocketchip.amba.axi4._
+import freechips.rocketchip.amba.axi4stream._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util.SyncResetSynchronizerShiftReg
+import freechips.rocketchip.subsystem.CrossingWrapper
 import sifive.fpgashells.clocks._
 import sifive.fpgashells.shell._
 import sifive.fpgashells.ip.xilinx._
@@ -224,6 +227,8 @@ class PCIeVC707PlacedOverlay(val shell: VC707Shell, name: String, val designInpu
   val areset    = shell { ClockSinkNode(Seq(ClockSinkParameters())) }
   areset := designInput.wrangler := axiClk
 
+  val sAxiIsland = LazyModule(new CrossingWrapper(AsynchronousCrossing(safe=true)) with HasAXI4StreamCrossing)
+
   val slaveSide = TLIdentityNode()
   pcie.crossTLIn(pcie.slave) := slaveSide
   pcie.crossTLIn(pcie.control) := slaveSide
@@ -260,6 +265,59 @@ class PCIeVC707PlacedOverlay(val shell: VC707Shell, name: String, val designInpu
 class PCIeVC707ShellPlacer(val shell: VC707Shell, val shellInput: PCIeShellInput)(implicit val valName: ValName)
   extends PCIeShellPlacer[VC707Shell] {
   def place(designInput: PCIeDesignInput) = new PCIeVC707PlacedOverlay(shell, valName.name, designInput, shellInput)
+}
+
+class PCIeStreamVC707PlacedOverlay(val shell: VC707Shell, name: String, val designInput: PCIeDesignInput, val shellInput: PCIeShellInput)
+  extends PCIeStreamPlacedOverlay[XilinxVC707PCIeX1Pads](name, designInput, shellInput)
+{
+  val pcie = LazyModule(new XilinxVC707PCIeX16)
+  val ioNode = BundleBridgeSource(() => pcie.module.io.cloneType)
+  val topIONode = shell { ioNode.makeSink() }
+  val axiClk    = shell { ClockSourceNode(freqMHz = 125) }
+  val areset    = shell { ClockSinkNode(Seq(ClockSinkParameters())) }
+  areset := designInput.wrangler := axiClk
+
+  val slaveSide = AXI4StreamIdentityNode()
+  val slaveSide2 = AXI4IdentityNode()
+  val masterSide = AXI4StreamIdentityNode()
+  pcie.crossAXI4StreamIn(pcie.rcslave) := slaveSide
+  pcie.crossAXI4StreamIn(pcie.ccslave) := slaveSide
+  masterSide := pcie.crossAXI4StreamOut(pcie.rqmaster)
+  masterSide := pcie.crossAXI4StreamOut(pcie.cqmaster)
+  pcie.crossAXI4In(pcie.csrslave) := slaveSide2
+  // val node = NodeHandle(slaveSide, pcie.crossTLOut(pcie.master))
+  val intnode = pcie.crossIntOut(pcie.intnode)
+
+  def overlayOutput = PCIeStreamOverlayOutput(slaveSide, masterSide, slaveSide2, intnode)
+  def ioFactory = new XilinxVC707PCIeX1Pads
+
+  InModuleBody { ioNode.bundle <> pcie.module.io }
+
+  shell { InModuleBody {
+    val (axi, _) = axiClk.out(0)
+    val (ar, _) = areset.in(0)
+    val port = topIONode.bundle.port
+    io <> port
+    axi.clock := port.axi_aclk_out
+    axi.reset := !port.mmcm_lock
+    port.axi_aresetn := !ar.reset
+    port.axi_ctl_aresetn := !ar.reset
+
+    shell.xdc.addPackagePin(io.REFCLK_rxp, "A10")
+    shell.xdc.addPackagePin(io.REFCLK_rxn, "A9")
+    shell.xdc.addPackagePin(io.pci_exp_txp, "H4")
+    shell.xdc.addPackagePin(io.pci_exp_txn, "H3")
+    shell.xdc.addPackagePin(io.pci_exp_rxp, "G6")
+    shell.xdc.addPackagePin(io.pci_exp_rxn, "G5")
+
+    shell.sdc.addClock(s"${name}_ref_clk", io.REFCLK_rxp, 100)
+  } }
+
+  shell.sdc.addGroup(clocks = Seq("txoutclk", "userclk1"))
+}
+class PCIeStreamVC707ShellPlacer(val shell: VC707Shell, val shellInput: PCIeShellInput)(implicit val valName: ValName)
+  extends PCIeStreamShellPlacer[VC707Shell] {
+  def place(designInput: PCIeDesignInput) = new PCIeStreamVC707PlacedOverlay(shell, valName.name, designInput, shellInput)
 }
 
 abstract class VC707Shell()(implicit p: Parameters) extends Series7Shell
